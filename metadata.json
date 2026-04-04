@@ -1,0 +1,5 @@
+{
+  "name": "sw plus",
+  "description": "8-deck baccarat simulator testing a specific betting strategy based on STRONG or WEAK scores. STRONG WIN: 7,8,9, WEAK LOSS: 0,1",
+  "requestFramePermissions": []
+}
