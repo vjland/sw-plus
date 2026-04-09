@@ -282,8 +282,8 @@ export default function App() {
         const winnerScore = logs[i].winner === "Player" ? pScore : bScore;
         const loserScore = logs[i].winner === "Player" ? bScore : pScore;
 
-        if (winnerScore >= 7) return logs[i].winner;
-        if (loserScore <= 1) return logs[i].winner;
+        if (winnerScore >= 7) return logs[i].winner as "Player" | "Banker";
+        if (loserScore <= 1) return logs[i].winner as "Player" | "Banker";
         return logs[i].winner === "Player" ? "Banker" : "Player";
       }
     }
@@ -621,7 +621,7 @@ export default function App() {
         <div
           className={`absolute inset-0 transition-opacity duration-200 ${appMode === "live" || activeTab === "chart" ? "opacity-100 z-10" : "opacity-0 pointer-events-none z-0"}`}
         >
-          <div className={`w-full h-full relative ${appMode === "live" ? "bg-[#30364F]" : "bg-zinc-950"}`}>
+          <div className={`w-full h-full relative ${appMode === "live" ? "bg-[#1e212b]" : "bg-zinc-950"}`}>
             {/* Chart Controls Group */}
             <div className="absolute top-3 left-3 flex items-center gap-3 z-20 bg-zinc-900/50 p-1.5 rounded-xl backdrop-blur-sm border border-zinc-800/50">
               <button
