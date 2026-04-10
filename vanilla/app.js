@@ -568,6 +568,7 @@ initKeypad();
 checkboxAutoHide.addEventListener('change', (e) => { autoHide = e.target.checked; });
 
 btnLiveConfirm.addEventListener('click', () => {
+  if ('vibrate' in navigator) navigator.vibrate(50);
   if (liveScoreInput.length !== 2) return;
 
   const pScore = parseInt(liveScoreInput[0], 10);
@@ -610,6 +611,7 @@ btnLiveConfirm.addEventListener('click', () => {
 });
 
 btnLiveUndo.addEventListener('click', () => {
+  if ('vibrate' in navigator) navigator.vibrate(50);
   if (liveLogs.length === 0) return;
   liveLogs.pop();
   liveChartData = liveLogs.filter(l => l.winner !== 'Tie').map(l => l.runningSum);

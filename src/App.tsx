@@ -292,6 +292,7 @@ export default function App() {
   };
 
   const handleLiveConfirm = () => {
+    if ('vibrate' in navigator) navigator.vibrate(50);
     if (liveScoreInput.length !== 2) return;
 
     const pScore = parseInt(liveScoreInput[0], 10);
@@ -346,6 +347,7 @@ export default function App() {
   };
 
   const handleLiveUndo = () => {
+    if ('vibrate' in navigator) navigator.vibrate(50);
     if (liveLogs.length === 0) return;
     const newLogs = liveLogs.slice(0, -1);
     setLiveLogs(newLogs);
