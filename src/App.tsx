@@ -247,7 +247,7 @@ const calculateMA = (data: number[], period: number) => {
 
 export default function App() {
   const [appMode, setAppMode] = useState<"simu" | "live">("simu");
-  const [activeTab, setActiveTab] = useState<"chart" | "log">("chart");
+  const [activeTab, setActiveTab] = useState<"chart" | "log" | "strategy">("chart");
   const [showMA, setShowMA] = useState(false);
   const [maPeriod, setMaPeriod] = useState<6 | 9>(9);
   const chartRef = useRef<any>(null);
@@ -743,6 +743,35 @@ export default function App() {
             </table>
           </div>
         )}
+
+        {/* Strategy Tab */}
+        {appMode !== "live" && (
+          <div
+            className={`absolute inset-0 overflow-y-auto bg-zinc-950 transition-opacity duration-200 p-6 ${activeTab === "strategy" ? "opacity-100 z-10" : "opacity-0 pointer-events-none z-0"}`}
+          >
+            <h2 className="text-xl font-bold text-zinc-100 mb-4">Betting Strategy</h2>
+            <div className="space-y-4 text-zinc-300 text-sm">
+              <p>
+                The system determines the next bet based on the outcome of the previous hand.
+              </p>
+              <div className="bg-zinc-900 p-4 rounded-lg border border-zinc-800">
+                <h3 className="text-[#0EA5E9] font-bold mb-2">Bet on the Streak (Previous Winner)</h3>
+                <p className="mb-2">We bet on the streak if any of the following conditions are met:</p>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li><strong>Strong Win (S):</strong> The winner scored 8 or 9.</li>
+                  <li><strong>Bad Beat (B):</strong> The difference between the winner and loser scores is exactly 1 point (e.g., 9-8, 8-7).</li>
+                  <li><strong>Baccarat (Z):</strong> The loser scored 0.</li>
+                </ul>
+              </div>
+              <div className="bg-zinc-900 p-4 rounded-lg border border-zinc-800">
+                <h3 className="text-red-400 font-bold mb-2">Bet on the Opposite</h3>
+                <p>
+                  If none of the above conditions are met, we bet on the opposite of the previous winner.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Calculator (Live Mode Only) */}
@@ -767,6 +796,14 @@ export default function App() {
           >
             <span className="text-xs font-bold uppercase tracking-wider">
               Audit Log
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab("strategy")}
+            className={`flex-1 py-3 flex items-center justify-center rounded-lg transition-colors ${activeTab === "strategy" ? (appMode === "live" ? "text-live-500 bg-live-500/10" : "text-[#0EA5E9] bg-[#0EA5E9]/10 shadow-[inset_0_0_10px_rgba(14,165,233,0.2)]") : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50"}`}
+          >
+            <span className="text-xs font-bold uppercase tracking-wider">
+              Strategy
             </span>
           </button>
         </div>

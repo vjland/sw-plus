@@ -135,6 +135,27 @@
         </tbody>
       </table>
     </div>
+
+    <!-- Strategy Tab -->
+    <div id="tab-strategy" class="absolute inset-0 overflow-y-auto bg-zinc-950 transition-opacity duration-200 p-6 opacity-0 pointer-events-none z-0">
+      <h2 class="text-xl font-bold text-zinc-100 mb-4">Betting Strategy</h2>
+      <div class="space-y-4 text-zinc-300 text-sm">
+        <p>The system determines the next bet based on the outcome of the previous hand.</p>
+        <div class="bg-zinc-900 p-4 rounded-lg border border-zinc-800">
+          <h3 class="text-[#0EA5E9] font-bold mb-2">Bet on the Streak (Previous Winner)</h3>
+          <p class="mb-2">We bet on the streak if any of the following conditions are met:</p>
+          <ul class="list-disc pl-5 space-y-2">
+            <li><strong>Strong Win (S):</strong> The winner scored 8 or 9.</li>
+            <li><strong>Bad Beat (B):</strong> The difference between the winner and loser scores is exactly 1 point (e.g., 9-8, 8-7).</li>
+            <li><strong>Baccarat (Z):</strong> The loser scored 0.</li>
+          </ul>
+        </div>
+        <div class="bg-zinc-900 p-4 rounded-lg border border-zinc-800">
+          <h3 class="text-red-400 font-bold mb-2">Bet on the Opposite</h3>
+          <p>If none of the above conditions are met, we bet on the opposite of the previous winner.</p>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Calculator (Live Mode Only) -->
@@ -147,6 +168,9 @@
     </button>
     <button id="btn-tab-log" class="flex-1 py-3 flex items-center justify-center rounded-lg transition-colors text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50">
       <span class="text-xs font-bold uppercase tracking-wider">Audit Log</span>
+    </button>
+    <button id="btn-tab-strategy" class="flex-1 py-3 flex items-center justify-center rounded-lg transition-colors text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50">
+      <span class="text-xs font-bold uppercase tracking-wider">Strategy</span>
     </button>
   </div>
 
