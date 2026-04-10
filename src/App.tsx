@@ -387,23 +387,23 @@ export default function App() {
       {
         label: "Running Sum",
         data: currentChartData,
-        borderColor: appMode === "simu" ? "#0EA5E9" : "#EAB308",
+        borderColor: appMode === "simu" ? "#0EA5E9" : "#4DCCBD",
         backgroundColor:
           appMode === "simu"
             ? "rgba(14, 165, 233, 0.1)"
-            : "rgba(234, 179, 8, 0.1)",
+            : "rgba(77, 204, 189, 0.1)",
         borderWidth: 2,
         tension: 0.1,
         pointRadius: 0,
         pointHoverRadius: 4,
-        pointBackgroundColor: appMode === "simu" ? "#0EA5E9" : "#EAB308",
+        pointBackgroundColor: appMode === "simu" ? "#0EA5E9" : "#4DCCBD",
       },
       ...(showMA
         ? [
             {
               label: `MA(${maPeriod})`,
               data: calculateMA(currentChartData, maPeriod),
-              borderColor: appMode === "simu" ? "#FFA69E" : "#00f2ff",
+              borderColor: appMode === "simu" ? "#FFA69E" : "#D1D646",
               backgroundColor: "transparent",
               borderWidth: 1,
               tension: 0.1,
@@ -544,6 +544,7 @@ export default function App() {
                   <button
                     key={d}
                     onClick={() => {
+                      if ('vibrate' in navigator) navigator.vibrate(50);
                       if (liveScoreInput.length < 2) setLiveScoreInput(prev => prev + d);
                     }}
                     className="aspect-square flex items-center justify-center rounded-lg text-lg font-bold border border-zinc-700 text-zinc-300 hover:bg-zinc-800/50 transition-colors"
@@ -552,13 +553,17 @@ export default function App() {
                   </button>
                 ))}
                 <button
-                  onClick={() => setLiveScoreInput("")}
+                  onClick={() => {
+                    if ('vibrate' in navigator) navigator.vibrate(50);
+                    setLiveScoreInput("")
+                  }}
                   className="aspect-square flex items-center justify-center rounded-lg text-lg font-bold border border-zinc-700 text-red-400 hover:bg-zinc-800/50 transition-colors"
                 >
                   C
                 </button>
                 <button
                   onClick={() => {
+                    if ('vibrate' in navigator) navigator.vibrate(50);
                     if (liveScoreInput.length < 2) setLiveScoreInput(prev => prev + "0");
                   }}
                   className="aspect-square flex items-center justify-center rounded-lg text-lg font-bold border border-zinc-700 text-zinc-300 hover:bg-zinc-800/50 transition-colors"
@@ -566,7 +571,10 @@ export default function App() {
                   0
                 </button>
                 <button
-                  onClick={() => setLiveScoreInput(prev => prev.slice(0, -1))}
+                  onClick={() => {
+                    if ('vibrate' in navigator) navigator.vibrate(50);
+                    setLiveScoreInput(prev => prev.slice(0, -1))
+                  }}
                   className="aspect-square flex items-center justify-center rounded-lg text-lg font-bold border border-zinc-700 text-zinc-400 hover:bg-zinc-800/50 transition-colors"
                 >
                   ⌫

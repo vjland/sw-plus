@@ -294,8 +294,8 @@ const updateUI = () => {
   const nextUpcomingBet = getNextBet(currentLogs);
 
   // Update Chart
-  const color = appMode === 'simu' ? '#0EA5E9' : '#EAB308';
-  const maColor = appMode === 'simu' ? '#FFA69E' : '#00f2ff';
+  const color = appMode === 'simu' ? '#0EA5E9' : '#4DCCBD';
+  const maColor = appMode === 'simu' ? '#FFA69E' : '#D1D646';
   const chartBg = appMode === 'simu' ? '#09090b' : '#1e212b';
   
   chartContainer.style.backgroundColor = chartBg;
@@ -377,7 +377,7 @@ const updateUI = () => {
     let betClass = 'text-blue-200/50';
     if (log.betResult === 'Win') betClass = 'bg-green-500/20 text-green-400';
     else if (log.betResult === 'Loss') betClass = 'bg-red-500/20 text-red-400';
-    else if (log.betResult === 'Push') betClass = 'bg-[#D53E0F]/20 text-[#D53E0F]';
+    else if (log.betResult === 'Push') betClass = 'bg-[#0EA5E9]/20 text-[#0EA5E9]';
 
     let sumColor = 'text-zinc-100';
     let sumPrefix = '';
@@ -413,7 +413,7 @@ const setMode = (mode) => {
   appMode = mode;
   const liveCalculator = document.getElementById('live-calculator');
   if (mode === 'simu') {
-    btnModeSimu.className = 'px-3 py-1 rounded-md text-sm font-medium transition-colors bg-[#D53E0F] text-zinc-950 shadow-[0_0_10px_rgba(213,62,15,0.5)]';
+    btnModeSimu.className = 'px-3 py-1 rounded-md text-sm font-medium transition-colors bg-[#0EA5E9] text-zinc-950 shadow-[0_0_10px_rgba(14,165,233,0.5)]';
     btnModeLive.className = 'px-3 py-1 rounded-md text-sm font-medium transition-colors text-zinc-400 hover:text-zinc-100';
     btnSimuRefresh.classList.remove('hidden');
     btnLivePanelToggle.classList.add('hidden');
@@ -422,6 +422,7 @@ const setMode = (mode) => {
     bottomNav.classList.remove('hidden');
     isPanelOpen = false;
   } else {
+    activeTab = 'chart';
     btnModeLive.className = 'px-3 py-1 rounded-md text-sm font-medium transition-colors bg-live-500 text-zinc-950';
     btnModeSimu.className = 'px-3 py-1 rounded-md text-sm font-medium transition-colors text-zinc-400 hover:text-zinc-100';
     btnSimuRefresh.classList.add('hidden');
@@ -436,8 +437,18 @@ const setMode = (mode) => {
 
 const setTab = (tab) => {
   activeTab = tab;
-  const activeColor = appMode === 'live' ? 'text-live-500 bg-live-500/10' : 'text-[#D53E0F] bg-[#D53E0F]/10 shadow-[inset_0_0_10px_rgba(213,62,15,0.2)]';
+  const activeColor = appMode === 'live' ? 'text-live-500 bg-live-500/10' : 'text-[#0EA5E9] bg-[#0EA5E9]/10 shadow-[inset_0_0_10px_rgba(14,165,233,0.2)]';
   const inactiveColor = 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50';
+
+  if (appMode === 'live') {
+    tabChart.classList.remove('opacity-0', 'pointer-events-none');
+    tabChart.classList.add('opacity-100', 'z-10');
+    tabLog.classList.remove('opacity-100', 'z-10');
+    tabLog.classList.add('opacity-0', 'pointer-events-none');
+    tabStrategy.classList.remove('opacity-100', 'z-10');
+    tabStrategy.classList.add('opacity-0', 'pointer-events-none');
+    return;
+  }
 
   if (tab === 'chart') {
     btnTabChart.className = `flex-1 py-3 flex items-center justify-center rounded-lg transition-colors ${activeColor}`;
@@ -528,9 +539,16 @@ const initKeypad = () => {
   keypadContainer.innerHTML = '';
   keys.forEach(key => {
     const btn = document.createElement('button');
-    btn.className = 'aspect-square flex items-center justify-center rounded-lg text-xl font-bold border border-zinc-700 text-zinc-400 hover:bg-zinc-800/50 transition-colors';
+    if (key === 'C') {
+      btn.className = 'aspect-square flex items-center justify-center rounded-lg text-lg font-bold border border-zinc-700 text-red-400 hover:bg-zinc-800/50 transition-colors';
+    } else if (key === '⌫') {
+      btn.className = 'aspect-square flex items-center justify-center rounded-lg text-lg font-bold border border-zinc-700 text-zinc-400 hover:bg-zinc-800/50 transition-colors';
+    } else {
+      btn.className = 'aspect-square flex items-center justify-center rounded-lg text-lg font-bold border border-zinc-700 text-zinc-300 hover:bg-zinc-800/50 transition-colors';
+    }
     btn.textContent = key;
     btn.addEventListener('click', () => {
+      if ('vibrate' in navigator) navigator.vibrate(50);
       if (key === 'C') {
         liveScoreInput = '';
       } else if (key === '⌫') {

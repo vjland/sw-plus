@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --color-live-500: #EAB308;
-  --color-live-600: #D97706;
+  --color-live-500: #4DCCBD;
+  --color-live-600: #3BB2A5;
   --color-live-900: #451A03;
   --color-live-950: #1e212b;
 }
