@@ -403,7 +403,7 @@ export default function App() {
             {
               label: `MA(${maPeriod})`,
               data: calculateMA(currentChartData, maPeriod),
-              borderColor: appMode === "simu" ? "#3b82f6" : "#00f2ff",
+              borderColor: appMode === "simu" ? "#FFA69E" : "#00f2ff",
               backgroundColor: "transparent",
               borderWidth: 1,
               tension: 0.1,

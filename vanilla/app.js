@@ -70,7 +70,7 @@ const chart = new Chart(ctx, {
     }, {
       label: 'MA(9)',
       data: [],
-      borderColor: '#3b82f6',
+      borderColor: '#FFA69E',
       backgroundColor: 'transparent',
       borderWidth: 1,
       tension: 0.1,
@@ -293,7 +293,7 @@ const updateUI = () => {
 
   // Update Chart
   const color = appMode === 'simu' ? '#0EA5E9' : '#EAB308';
-  const maColor = appMode === 'simu' ? '#3b82f6' : '#00f2ff';
+  const maColor = appMode === 'simu' ? '#FFA69E' : '#00f2ff';
   const chartBg = appMode === 'simu' ? '#09090b' : '#1e212b';
   
   chartContainer.style.backgroundColor = chartBg;
