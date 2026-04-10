@@ -216,9 +216,9 @@ const simulate = () => {
       const winnerScore = result.winner === "Player" ? result.playerValue : result.bankerValue;
       const loserScore = result.winner === "Player" ? result.bankerValue : result.playerValue;
 
-      if (winnerScore >= 7) {
-        nextBet = result.winner;
-      } else if (loserScore <= 1) {
+      const isStreak = winnerScore >= 8 || (winnerScore - loserScore === 1) || loserScore === 0;
+
+      if (isStreak) {
         nextBet = result.winner;
       } else {
         nextBet = result.winner === "Player" ? "Banker" : "Player";
@@ -282,8 +282,9 @@ export default function App() {
         const winnerScore = logs[i].winner === "Player" ? pScore : bScore;
         const loserScore = logs[i].winner === "Player" ? bScore : pScore;
 
-        if (winnerScore >= 7) return logs[i].winner as "Player" | "Banker";
-        if (loserScore <= 1) return logs[i].winner as "Player" | "Banker";
+        const isStreak = winnerScore >= 8 || (winnerScore - loserScore === 1) || loserScore === 0;
+
+        if (isStreak) return logs[i].winner as "Player" | "Banker";
         return logs[i].winner === "Player" ? "Banker" : "Player";
       }
     }
@@ -685,8 +686,9 @@ export default function App() {
                   if (log.winner !== "Tie") {
                     const wScore = log.winner === "Player" ? log.playerValue! : log.bankerValue!;
                     const lScore = log.winner === "Player" ? log.bankerValue! : log.playerValue!;
-                    if (wScore >= 7) winType = "(S)";
-                    else if (lScore <= 1) winType = "(W)";
+                    if (wScore >= 8) winType = "(S)";
+                    else if (wScore - lScore === 1) winType = "(B)";
+                    else if (lScore === 0) winType = "(Z)";
                   }
                   return (
                   <tr key={i} className="hover:bg-zinc-800/30 transition-colors">

@@ -237,10 +237,10 @@ const simulate = () => {
     if (result.winner !== 'Tie') {
       const winnerScore = result.winner === 'Player' ? result.playerValue : result.bankerValue;
       const loserScore = result.winner === 'Player' ? result.bankerValue : result.playerValue;
-      const isStrongWin = winnerScore >= 7;
-      const isWeakLoss = loserScore <= 1;
       
-      if (isStrongWin || isWeakLoss) {
+      const isStreak = winnerScore >= 8 || (winnerScore - loserScore === 1) || loserScore === 0;
+      
+      if (isStreak) {
         nextBet = result.winner;
       } else {
         nextBet = result.winner === 'Player' ? 'Banker' : 'Player';
@@ -258,10 +258,10 @@ const getNextBet = (logs) => {
     if (log.winner !== 'Tie') {
       const winnerScore = log.winner === 'Player' ? log.playerValue : log.bankerValue;
       const loserScore = log.winner === 'Player' ? log.bankerValue : log.playerValue;
-      const isStrongWin = winnerScore >= 7;
-      const isWeakLoss = loserScore <= 1;
       
-      if (isStrongWin || isWeakLoss) {
+      const isStreak = winnerScore >= 8 || (winnerScore - loserScore === 1) || loserScore === 0;
+      
+      if (isStreak) {
         return log.winner;
       } else {
         return log.winner === 'Player' ? 'Banker' : 'Player';
@@ -367,8 +367,9 @@ const updateUI = () => {
     if (log.winner !== 'Tie' && log.playerValue !== undefined) {
       const winnerScore = log.winner === 'Player' ? log.playerValue : log.bankerValue;
       const loserScore = log.winner === 'Player' ? log.bankerValue : log.playerValue;
-      if (winnerScore >= 7) winType = '(S)';
-      else if (loserScore <= 1) winType = '(W)';
+      if (winnerScore >= 8) winType = '(S)';
+      else if (winnerScore - loserScore === 1) winType = '(B)';
+      else if (loserScore === 0) winType = '(Z)';
     }
 
     let betClass = 'text-blue-200/50';
