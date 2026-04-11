@@ -95,8 +95,8 @@
     </div>
 
     <!-- Chart Tab -->
-    <div id="tab-chart" class="absolute inset-0 transition-opacity duration-200 opacity-100 z-10">
-      <div id="chart-container" class="w-full h-full relative bg-zinc-950">
+    <div id="tab-chart" class="absolute inset-0 transition-opacity duration-200 flex flex-col opacity-100 z-10">
+      <div id="chart-container" class="w-full flex-1 relative bg-zinc-950">
         <!-- Chart Controls Group -->
         <div class="absolute top-3 left-3 flex items-center gap-3 z-20 bg-zinc-900/50 p-1.5 rounded-xl backdrop-blur-sm border border-zinc-800/50">
           <button id="btn-chart-download" class="p-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 rounded-lg transition-colors shadow-sm" title="Download Chart Image">
@@ -105,17 +105,27 @@
           
           <div class="h-6 w-[1px] bg-zinc-700 mx-1"></div>
 
-          <div class="flex bg-zinc-950 p-0.5 rounded-lg border border-zinc-800">
-            <button id="btn-ma-period-6" class="px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors text-zinc-500 hover:text-zinc-300">6</button>
-            <button id="btn-ma-period-9" class="px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors bg-blue-600 text-white">9</button>
-          </div>
+          <button id="btn-road-toggle" class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all bg-[#0EA5E9] text-zinc-950 shadow-[0_0_10px_rgba(14,165,233,0.3)]">Road</button>
 
-          <button id="btn-ma-toggle" class="w-10 h-5 rounded-full relative transition-colors bg-zinc-700" title="Toggle MA">
-            <div id="ma-toggle-dot" class="w-4 h-4 rounded-full bg-white absolute top-0.5 left-0.5 transition-transform translate-x-0"></div>
-          </button>
+          <div class="flex bg-zinc-950 p-0.5 rounded-lg border border-zinc-800">
+            <button id="btn-ma-period-off" class="px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors bg-zinc-700 text-white">OFF</button>
+            <button id="btn-ma-period-6" class="px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors text-zinc-500 hover:text-zinc-300">6</button>
+            <button id="btn-ma-period-9" class="px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors text-zinc-500 hover:text-zinc-300">9</button>
+          </div>
         </div>
 
-        <canvas id="myChart"></canvas>
+        <div class="absolute inset-0 pt-16 pb-4 px-4">
+          <canvas id="myChart"></canvas>
+        </div>
+      </div>
+      
+      <!-- Big Road Container -->
+      <div id="big-road-container" class="h-[20%] min-h-[100px] border-t border-zinc-800">
+         <div class="h-full overflow-x-auto overflow-y-hidden bg-zinc-950 p-1 custom-scrollbar" id="big-road-scroll">
+            <div id="big-road-grid" class="flex flex-col h-full w-max gap-[1px] bg-zinc-800 border border-zinc-800">
+               <!-- Rows injected by JS -->
+            </div>
+         </div>
       </div>
     </div>
 

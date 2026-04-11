@@ -14,8 +14,7 @@ let liveChartData = [];
 let isPanelOpen = false;
 let autoHide = false;
 let liveScoreInput = "";
-let showMA = false;
-let maPeriod = 9;
+let maPeriod = 0;
 
 // DOM Elements
 const btnModeSimu = document.getElementById('btn-mode-simu');
@@ -24,8 +23,6 @@ const nextBetIndicator = document.getElementById('next-bet-indicator');
 const btnSimuRefresh = document.getElementById('btn-simu-refresh');
 const btnLivePanelToggle = document.getElementById('btn-live-panel-toggle');
 const liveInputPanel = document.getElementById('live-input-panel');
-const btnMaToggle = document.getElementById('btn-ma-toggle');
-const maToggleDot = document.getElementById('ma-toggle-dot');
 const chartContainer = document.getElementById('chart-container');
 
 const liveScoreP = document.getElementById('live-score-p');
@@ -45,6 +42,11 @@ const logTbody = document.getElementById('log-tbody');
 const btnTabChart = document.getElementById('btn-tab-chart');
 const btnTabLog = document.getElementById('btn-tab-log');
 const btnTabStrategy = document.getElementById('btn-tab-strategy');
+
+let showBigRoad = true;
+const btnRoadToggle = document.getElementById('btn-road-toggle');
+const bigRoadContainer = document.getElementById('big-road-container');
+const bigRoadGrid = document.getElementById('big-road-grid');
 
 const resetModal = document.getElementById('reset-modal');
 const btnResetCancel = document.getElementById('btn-reset-cancel');
@@ -298,45 +300,58 @@ const updateUI = () => {
   const maColor = appMode === 'simu' ? '#FFA69E' : '#D1D646';
   const chartBg = appMode === 'simu' ? '#09090b' : '#1e212b';
   
+  if (showBigRoad) {
+    bigRoadContainer.classList.remove('hidden');
+    btnRoadToggle.className = `px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${appMode === 'simu' ? 'bg-[#0EA5E9] text-zinc-950 shadow-[0_0_10px_rgba(14,165,233,0.3)]' : 'bg-live-500 text-zinc-950 shadow-[0_0_10px_rgba(77,204,189,0.3)]'}`;
+    renderBigRoad(currentLogs);
+  } else {
+    bigRoadContainer.classList.add('hidden');
+    btnRoadToggle.className = 'px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all bg-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700';
+  }
+  
   chartContainer.style.backgroundColor = chartBg;
   
   chart.data.datasets[0].data = currentChartData;
   chart.data.datasets[0].borderColor = color;
   chart.data.datasets[0].backgroundColor = color;
   
-  chart.data.datasets[1].label = `MA(${maPeriod})`;
-  chart.data.datasets[1].data = calculateMA(currentChartData, maPeriod);
-  chart.data.datasets[1].borderColor = maColor;
-  chart.data.datasets[1].hidden = !showMA;
+  if (maPeriod > 0) {
+    chart.data.datasets[1].label = `MA(${maPeriod})`;
+    chart.data.datasets[1].data = calculateMA(currentChartData, maPeriod);
+    chart.data.datasets[1].borderColor = maColor;
+    chart.data.datasets[1].hidden = false;
+  } else {
+    chart.data.datasets[1].hidden = true;
+  }
   
   chart.update();
 
   // Update MA Period Buttons
+  const btnMaOff = document.getElementById('btn-ma-period-off');
   const btnMa6 = document.getElementById('btn-ma-period-6');
   const btnMa9 = document.getElementById('btn-ma-period-9');
-  if (maPeriod === 6) {
+  
+  if (maPeriod === 0) {
+    btnMaOff.classList.add('bg-zinc-700', 'text-white');
+    btnMaOff.classList.remove('text-zinc-500', 'hover:text-zinc-300');
+    btnMa6.classList.remove('bg-blue-600', 'text-white');
+    btnMa6.classList.add('text-zinc-500', 'hover:text-zinc-300');
+    btnMa9.classList.remove('bg-blue-600', 'text-white');
+    btnMa9.classList.add('text-zinc-500', 'hover:text-zinc-300');
+  } else if (maPeriod === 6) {
+    btnMaOff.classList.remove('bg-zinc-700', 'text-white');
+    btnMaOff.classList.add('text-zinc-500', 'hover:text-zinc-300');
     btnMa6.classList.add('bg-blue-600', 'text-white');
     btnMa6.classList.remove('text-zinc-500', 'hover:text-zinc-300');
     btnMa9.classList.remove('bg-blue-600', 'text-white');
     btnMa9.classList.add('text-zinc-500', 'hover:text-zinc-300');
   } else {
+    btnMaOff.classList.remove('bg-zinc-700', 'text-white');
+    btnMaOff.classList.add('text-zinc-500', 'hover:text-zinc-300');
     btnMa9.classList.add('bg-blue-600', 'text-white');
     btnMa9.classList.remove('text-zinc-500', 'hover:text-zinc-300');
     btnMa6.classList.remove('bg-blue-600', 'text-white');
     btnMa6.classList.add('text-zinc-500', 'hover:text-zinc-300');
-  }
-
-  // Update MA Toggle UI
-  if (showMA) {
-    btnMaToggle.classList.remove('bg-zinc-700');
-    btnMaToggle.classList.add('bg-blue-500');
-    maToggleDot.classList.remove('translate-x-0');
-    maToggleDot.classList.add('translate-x-5');
-  } else {
-    btnMaToggle.classList.remove('bg-blue-500');
-    btnMaToggle.classList.add('bg-zinc-700');
-    maToggleDot.classList.remove('translate-x-5');
-    maToggleDot.classList.add('translate-x-0');
   }
 
   // Update Next Bet Indicator
@@ -494,8 +509,8 @@ btnTabChart.addEventListener('click', () => setTab('chart'));
 btnTabLog.addEventListener('click', () => setTab('log'));
 btnTabStrategy.addEventListener('click', () => setTab('strategy'));
 
-btnMaToggle.addEventListener('click', () => {
-  showMA = !showMA;
+document.getElementById('btn-ma-period-off').addEventListener('click', () => {
+  maPeriod = 0;
   updateUI();
 });
 
@@ -514,6 +529,11 @@ document.getElementById('btn-chart-download').addEventListener('click', () => {
   link.download = `baccarat-chart-${appMode}.png`;
   link.href = chart.toBase64Image();
   link.click();
+});
+
+btnRoadToggle.addEventListener('click', () => {
+  showBigRoad = !showBigRoad;
+  updateUI();
 });
 
 btnSimuRefresh.addEventListener('click', () => {
@@ -633,6 +653,95 @@ btnResetConfirm.addEventListener('click', () => {
   resetModal.classList.add('hidden');
   updateUI();
 });
+
+// Big Road Rendering
+function renderBigRoad(logs) {
+  const grid = {};
+  let currentCol = 0;
+  let currentRow = 0;
+  let startCol = 0;
+  let lastWinner = null;
+  let pendingTies = 0;
+  let maxCol = 0;
+
+  for (const log of logs) {
+    if (log.winner === 'Tie') {
+      if (lastWinner === null) {
+        pendingTies++;
+      } else {
+        grid[`${currentCol},${currentRow}`].ties++;
+      }
+      continue;
+    }
+
+    if (lastWinner === null) {
+      lastWinner = log.winner;
+      currentCol = 0;
+      currentRow = 0;
+      startCol = 0;
+      grid[`${currentCol},${currentRow}`] = { winner: log.winner, ties: pendingTies };
+      pendingTies = 0;
+    } else if (log.winner === lastWinner) {
+      let nextRow = currentRow + 1;
+      let nextCol = currentCol;
+      
+      if (currentCol > startCol) {
+        nextRow = currentRow;
+        nextCol = currentCol + 1;
+      } else if (nextRow >= 6 || grid[`${nextCol},${nextRow}`]) {
+        nextRow = currentRow;
+        nextCol = currentCol + 1;
+      }
+      
+      while (grid[`${nextCol},${nextRow}`]) {
+         nextCol++;
+      }
+
+      currentCol = nextCol;
+      currentRow = nextRow;
+      grid[`${currentCol},${currentRow}`] = { winner: log.winner, ties: 0 };
+    } else {
+      lastWinner = log.winner;
+      startCol++;
+      while (grid[`${startCol},0`]) {
+        startCol++;
+      }
+      currentCol = startCol;
+      currentRow = 0;
+      grid[`${currentCol},${currentRow}`] = { winner: log.winner, ties: 0 };
+    }
+    
+    if (currentCol > maxCol) maxCol = currentCol;
+  }
+
+  const cols = Math.max(24, maxCol + 2);
+  let html = '';
+  for (let r = 0; r < 6; r++) {
+    html += '<div class="flex flex-1 gap-[1px]">';
+    for (let c = 0; c < cols; c++) {
+      const cell = grid[`${c},${r}`];
+      html += '<div class="h-full aspect-square bg-zinc-950 relative flex items-center justify-center">';
+      if (cell) {
+        const borderColor = cell.winner === 'Player' ? 'border-blue-500' : 'border-red-500';
+        html += `<div class="w-[75%] h-[75%] rounded-full border-[2px] ${borderColor} flex items-center justify-center relative">`;
+        if (cell.ties > 0) {
+          html += '<div class="absolute w-[140%] h-[2px] bg-green-500 -rotate-45 z-10"></div>';
+        }
+        if (cell.ties > 1) {
+          html += `<span class="text-[9px] text-green-500 font-bold z-20 bg-zinc-950/80 rounded-full px-0.5 leading-none">${cell.ties}</span>`;
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+  bigRoadGrid.innerHTML = html;
+  
+  // Auto scroll to right
+  const scrollContainer = document.getElementById('big-road-scroll');
+  scrollContainer.scrollLeft = scrollContainer.scrollWidth;
+}
 
 // Initial run
 const { logs, chartData } = simulate();

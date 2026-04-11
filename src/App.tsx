@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -245,11 +245,129 @@ const calculateMA = (data: number[], period: number) => {
   return ma;
 };
 
+const BigRoad = ({ logs }: { logs: LogEntry[] }) => {
+  const { grid, maxCol } = useMemo(() => {
+    const grid: Record<string, { winner: string; ties: number }> = {};
+    let currentCol = 0;
+    let currentRow = 0;
+    let startCol = 0;
+    let lastWinner: string | null = null;
+    let pendingTies = 0;
+    let maxCol = 0;
+
+    for (const log of logs) {
+      if (log.winner === "Tie") {
+        if (lastWinner === null) {
+          pendingTies++;
+        } else {
+          grid[`${currentCol},${currentRow}`].ties++;
+        }
+        continue;
+      }
+
+      if (lastWinner === null) {
+        lastWinner = log.winner;
+        currentCol = 0;
+        currentRow = 0;
+        startCol = 0;
+        grid[`${currentCol},${currentRow}`] = {
+          winner: log.winner,
+          ties: pendingTies,
+        };
+        pendingTies = 0;
+      } else if (log.winner === lastWinner) {
+        let nextRow = currentRow + 1;
+        let nextCol = currentCol;
+
+        if (currentCol > startCol) {
+          nextRow = currentRow;
+          nextCol = currentCol + 1;
+        } else if (nextRow >= 6 || grid[`${nextCol},${nextRow}`]) {
+          nextRow = currentRow;
+          nextCol = currentCol + 1;
+        }
+
+        while (grid[`${nextCol},${nextRow}`]) {
+          nextCol++;
+        }
+
+        currentCol = nextCol;
+        currentRow = nextRow;
+        grid[`${currentCol},${currentRow}`] = { winner: log.winner, ties: 0 };
+      } else {
+        lastWinner = log.winner;
+        startCol++;
+        while (grid[`${startCol},0`]) {
+          startCol++;
+        }
+        currentCol = startCol;
+        currentRow = 0;
+        grid[`${currentCol},${currentRow}`] = { winner: log.winner, ties: 0 };
+      }
+
+      if (currentCol > maxCol) maxCol = currentCol;
+    }
+
+    return { grid, maxCol };
+  }, [logs]);
+
+  const cols = Math.max(24, maxCol + 2);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+    }
+  }, [grid, cols]);
+
+  return (
+    <div
+      ref={scrollRef}
+      className="h-full overflow-x-auto overflow-y-hidden bg-zinc-950 p-1 custom-scrollbar"
+    >
+      <div className="flex flex-col h-full w-max gap-[1px] bg-zinc-800 border border-zinc-800">
+        {[0, 1, 2, 3, 4, 5].map((row) => (
+          <div key={row} className="flex flex-1 gap-[1px]">
+            {Array.from({ length: cols }).map((_, col) => {
+              const cell = grid[`${col},${row}`];
+              return (
+                <div
+                  key={col}
+                  className="h-full aspect-square bg-zinc-950 relative flex items-center justify-center"
+                >
+                  {cell && (
+                    <div
+                      className={`w-[75%] h-[75%] rounded-full border-[2px] ${
+                        cell.winner === "Player"
+                          ? "border-blue-500"
+                          : "border-red-500"
+                      } flex items-center justify-center relative`}
+                    >
+                      {cell.ties > 0 && (
+                        <div className="absolute w-[140%] h-[2px] bg-green-500 -rotate-45 z-10"></div>
+                      )}
+                      {cell.ties > 1 && (
+                        <span className="text-[9px] text-green-500 font-bold z-20 bg-zinc-950/80 rounded-full px-0.5 leading-none">
+                          {cell.ties}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
   const [appMode, setAppMode] = useState<"simu" | "live">("simu");
   const [activeTab, setActiveTab] = useState<"chart" | "log" | "strategy">("chart");
-  const [showMA, setShowMA] = useState(false);
-  const [maPeriod, setMaPeriod] = useState<6 | 9>(9);
+  const [showBigRoad, setShowBigRoad] = useState(true);
+  const [maPeriod, setMaPeriod] = useState<0 | 6 | 9>(0);
   const chartRef = useRef<any>(null);
 
   // Simu state
@@ -400,7 +518,7 @@ export default function App() {
         pointHoverRadius: 4,
         pointBackgroundColor: appMode === "simu" ? "#0EA5E9" : "#4DCCBD",
       },
-      ...(showMA
+      ...(maPeriod > 0
         ? [
             {
               label: `MA(${maPeriod})`,
@@ -630,9 +748,9 @@ export default function App() {
 
         {/* Chart Tab */}
         <div
-          className={`absolute inset-0 transition-opacity duration-200 ${appMode === "live" || activeTab === "chart" ? "opacity-100 z-10" : "opacity-0 pointer-events-none z-0"}`}
+          className={`absolute inset-0 transition-opacity duration-200 flex flex-col ${appMode === "live" || activeTab === "chart" ? "opacity-100 z-10" : "opacity-0 pointer-events-none z-0"}`}
         >
-          <div className={`w-full h-full relative ${appMode === "live" ? "bg-[#1e212b]" : "bg-zinc-950"}`}>
+          <div className={`w-full flex-1 relative ${appMode === "live" ? "bg-[#1e212b]" : "bg-zinc-950"}`}>
             {/* Chart Controls Group */}
             <div className="absolute top-3 left-3 flex items-center gap-3 z-20 bg-zinc-900/50 p-1.5 rounded-xl backdrop-blur-sm border border-zinc-800/50">
               <button
@@ -645,7 +763,20 @@ export default function App() {
               
               <div className="h-6 w-[1px] bg-zinc-700 mx-1" />
 
+              <button
+                onClick={() => setShowBigRoad(!showBigRoad)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${showBigRoad ? (appMode === "simu" ? "bg-[#0EA5E9] text-zinc-950 shadow-[0_0_10px_rgba(14,165,233,0.3)]" : "bg-live-500 text-zinc-950 shadow-[0_0_10px_rgba(77,204,189,0.3)]") : "bg-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700"}`}
+              >
+                Road
+              </button>
+
               <div className="flex bg-zinc-950 p-0.5 rounded-lg border border-zinc-800">
+                <button
+                  onClick={() => setMaPeriod(0)}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors ${maPeriod === 0 ? "bg-zinc-700 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
+                >
+                  OFF
+                </button>
                 <button
                   onClick={() => setMaPeriod(6)}
                   className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors ${maPeriod === 6 ? "bg-blue-600 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
@@ -659,20 +790,19 @@ export default function App() {
                   9
                 </button>
               </div>
-
-              <button
-                onClick={() => setShowMA(!showMA)}
-                className={`w-10 h-5 rounded-full relative transition-colors ${showMA ? "bg-blue-500" : "bg-zinc-700"}`}
-                title={`Toggle MA(${maPeriod})`}
-              >
-                <div
-                  className={`w-4 h-4 rounded-full bg-white absolute top-0.5 left-0.5 transition-transform ${showMA ? "translate-x-5" : "translate-x-0"}`}
-                />
-              </button>
             </div>
 
-            <Line ref={chartRef} data={data} options={options} />
+            <div className="absolute inset-0 pt-16 pb-4 px-4">
+              <Line ref={chartRef} data={data} options={options} />
+            </div>
           </div>
+          
+          {/* Big Road Container */}
+          {showBigRoad && (
+            <div className="h-[20%] min-h-[100px] border-t border-zinc-800">
+               <BigRoad logs={currentLogs} />
+            </div>
+          )}
         </div>
 
         {/* Log Tab */}
