@@ -792,7 +792,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className="absolute inset-0 pt-16 pb-4 px-4">
+            <div className="absolute inset-0">
               <Line ref={chartRef} data={data} options={options} />
             </div>
           </div>
