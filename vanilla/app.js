@@ -15,6 +15,8 @@ let isPanelOpen = false;
 let autoHide = false;
 let liveScoreInput = "";
 let maPeriod = 0;
+let selectedHand = null;
+let isAutoScrolling = false;
 
 // DOM Elements
 const btnModeSimu = document.getElementById('btn-mode-simu');
@@ -24,6 +26,7 @@ const btnSimuRefresh = document.getElementById('btn-simu-refresh');
 const btnLivePanelToggle = document.getElementById('btn-live-panel-toggle');
 const liveInputPanel = document.getElementById('live-input-panel');
 const chartContainer = document.getElementById('chart-container');
+const chartTouchContainer = document.getElementById('chart-touch-container');
 
 const liveScoreP = document.getElementById('live-score-p');
 const liveScoreB = document.getElementById('live-score-b');
@@ -95,7 +98,7 @@ const chart = new Chart(ctx, {
         ticks: { color: '#A1A1AA' }
       },
       y: {
-        min: -20, max: 20,
+        min: -35, max: 35,
         title: { display: false },
         grid: { 
           display: true, 
@@ -111,10 +114,7 @@ const chart = new Chart(ctx, {
     plugins: {
       legend: { display: false },
       tooltip: {
-        callbacks: {
-          title: (context) => 'Hand ' + context[0].label,
-          label: (context) => 'Running Sum: ' + context.raw
-        }
+        enabled: false
       },
       zoom: {
         pan: {
@@ -122,7 +122,20 @@ const chart = new Chart(ctx, {
           mode: 'y',
         },
         limits: {
-          y: { min: -40, max: 40 }
+          y: { min: -50, max: 50 }
+        }
+      }
+    },
+    interaction: {
+      mode: 'index',
+      intersect: false,
+    },
+    onClick: (event, elements) => {
+      if (appMode === 'simu' && elements && elements.length > 0) {
+        const newSelected = elements[0].index + 1;
+        if (selectedHand !== newSelected) {
+          selectedHand = newSelected;
+          updateUI();
         }
       }
     }
@@ -314,6 +327,10 @@ const updateUI = () => {
   chart.data.datasets[0].data = currentChartData;
   chart.data.datasets[0].borderColor = color;
   chart.data.datasets[0].backgroundColor = color;
+  chart.data.datasets[0].pointRadius = currentChartData.map((_, i) => (appMode === 'simu' && selectedHand === i + 1) ? 6 : 0);
+  chart.data.datasets[0].pointBackgroundColor = currentChartData.map((_, i) => (appMode === 'simu' && selectedHand === i + 1) ? '#22c55e' : color);
+  chart.data.datasets[0].pointBorderColor = currentChartData.map((_, i) => (appMode === 'simu' && selectedHand === i + 1) ? '#ffffff' : 'transparent');
+  chart.data.datasets[0].pointBorderWidth = currentChartData.map((_, i) => (appMode === 'simu' && selectedHand === i + 1) ? 2 : 0);
   
   if (maPeriod > 0) {
     chart.data.datasets[1].label = `MA(${maPeriod})`;
@@ -662,14 +679,17 @@ function renderBigRoad(logs) {
   let startCol = 0;
   let lastWinner = null;
   let pendingTies = 0;
+  let pendingTieHands = [];
   let maxCol = 0;
 
   for (const log of logs) {
     if (log.winner === 'Tie') {
       if (lastWinner === null) {
         pendingTies++;
+        pendingTieHands.push(log.handNumber);
       } else {
         grid[`${currentCol},${currentRow}`].ties++;
+        grid[`${currentCol},${currentRow}`].hands.push(log.handNumber);
       }
       continue;
     }
@@ -679,8 +699,9 @@ function renderBigRoad(logs) {
       currentCol = 0;
       currentRow = 0;
       startCol = 0;
-      grid[`${currentCol},${currentRow}`] = { winner: log.winner, ties: pendingTies };
+      grid[`${currentCol},${currentRow}`] = { winner: log.winner, ties: pendingTies, hands: [...pendingTieHands, log.handNumber] };
       pendingTies = 0;
+      pendingTieHands = [];
     } else if (log.winner === lastWinner) {
       let nextRow = currentRow + 1;
       let nextCol = currentCol;
@@ -699,7 +720,7 @@ function renderBigRoad(logs) {
 
       currentCol = nextCol;
       currentRow = nextRow;
-      grid[`${currentCol},${currentRow}`] = { winner: log.winner, ties: 0 };
+      grid[`${currentCol},${currentRow}`] = { winner: log.winner, ties: 0, hands: [log.handNumber] };
     } else {
       lastWinner = log.winner;
       startCol++;
@@ -708,7 +729,7 @@ function renderBigRoad(logs) {
       }
       currentCol = startCol;
       currentRow = 0;
-      grid[`${currentCol},${currentRow}`] = { winner: log.winner, ties: 0 };
+      grid[`${currentCol},${currentRow}`] = { winner: log.winner, ties: 0, hands: [log.handNumber] };
     }
     
     if (currentCol > maxCol) maxCol = currentCol;
@@ -730,6 +751,9 @@ function renderBigRoad(logs) {
         if (cell.ties > 1) {
           html += `<span class="text-[9px] text-green-500 font-bold z-20 bg-zinc-950/80 rounded-full px-0.5 leading-none">${cell.ties}</span>`;
         }
+        if (appMode === 'simu' && selectedHand !== null && cell.hands.includes(selectedHand)) {
+          html += '<div class="absolute inset-0 m-auto w-2.5 h-2.5 bg-green-500 border border-white rounded-full z-30 shadow-sm"></div>';
+        }
         html += '</div>';
       }
       html += '</div>';
@@ -738,9 +762,31 @@ function renderBigRoad(logs) {
   }
   bigRoadGrid.innerHTML = html;
   
-  // Auto scroll to right
+  // Auto scroll to right or to selected hand
   const scrollContainer = document.getElementById('big-road-scroll');
-  scrollContainer.scrollLeft = scrollContainer.scrollWidth;
+  if (selectedHand === null) {
+    scrollContainer.scrollLeft = scrollContainer.scrollWidth;
+  } else {
+    let selectedCol = -1;
+    for (const key in grid) {
+      if (grid[key].hands.includes(selectedHand)) {
+        selectedCol = parseInt(key.split(',')[0]);
+        break;
+      }
+    }
+    if (selectedCol !== -1) {
+      const colWidth = scrollContainer.scrollWidth / cols;
+      const targetScroll = selectedCol * colWidth - scrollContainer.clientWidth / 2;
+      const currentCenter = scrollContainer.scrollLeft + scrollContainer.clientWidth / 2;
+      if (Math.abs(currentCenter - (selectedCol * colWidth)) > colWidth) {
+        isAutoScrolling = true;
+        scrollContainer.scrollTo({ left: targetScroll, behavior: 'auto' });
+        setTimeout(() => {
+          isAutoScrolling = false;
+        }, 50);
+      }
+    }
+  }
 }
 
 // Initial run

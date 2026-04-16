@@ -245,22 +245,33 @@ const calculateMA = (data: number[], period: number) => {
   return ma;
 };
 
-const BigRoad = ({ logs }: { logs: LogEntry[] }) => {
+const BigRoad = ({
+  logs,
+  appMode,
+  selectedHand,
+}: {
+  logs: LogEntry[];
+  appMode: string;
+  selectedHand: number | null;
+}) => {
   const { grid, maxCol } = useMemo(() => {
-    const grid: Record<string, { winner: string; ties: number }> = {};
+    const grid: Record<string, { winner: string; ties: number; hands: number[] }> = {};
     let currentCol = 0;
     let currentRow = 0;
     let startCol = 0;
     let lastWinner: string | null = null;
     let pendingTies = 0;
+    let pendingTieHands: number[] = [];
     let maxCol = 0;
 
     for (const log of logs) {
       if (log.winner === "Tie") {
         if (lastWinner === null) {
           pendingTies++;
+          pendingTieHands.push(log.handNumber);
         } else {
           grid[`${currentCol},${currentRow}`].ties++;
+          grid[`${currentCol},${currentRow}`].hands.push(log.handNumber);
         }
         continue;
       }
@@ -273,8 +284,10 @@ const BigRoad = ({ logs }: { logs: LogEntry[] }) => {
         grid[`${currentCol},${currentRow}`] = {
           winner: log.winner,
           ties: pendingTies,
+          hands: [...pendingTieHands, log.handNumber],
         };
         pendingTies = 0;
+        pendingTieHands = [];
       } else if (log.winner === lastWinner) {
         let nextRow = currentRow + 1;
         let nextCol = currentCol;
@@ -293,7 +306,7 @@ const BigRoad = ({ logs }: { logs: LogEntry[] }) => {
 
         currentCol = nextCol;
         currentRow = nextRow;
-        grid[`${currentCol},${currentRow}`] = { winner: log.winner, ties: 0 };
+        grid[`${currentCol},${currentRow}`] = { winner: log.winner, ties: 0, hands: [log.handNumber] };
       } else {
         lastWinner = log.winner;
         startCol++;
@@ -302,7 +315,7 @@ const BigRoad = ({ logs }: { logs: LogEntry[] }) => {
         }
         currentCol = startCol;
         currentRow = 0;
-        grid[`${currentCol},${currentRow}`] = { winner: log.winner, ties: 0 };
+        grid[`${currentCol},${currentRow}`] = { winner: log.winner, ties: 0, hands: [log.handNumber] };
       }
 
       if (currentCol > maxCol) maxCol = currentCol;
@@ -313,12 +326,35 @@ const BigRoad = ({ logs }: { logs: LogEntry[] }) => {
 
   const cols = Math.max(24, maxCol + 2);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isAutoScrolling = useRef(false);
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+      if (selectedHand === null) {
+        scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+      } else {
+        let selectedCol = -1;
+        for (const key in grid) {
+          if (grid[key].hands.includes(selectedHand)) {
+            selectedCol = parseInt(key.split(',')[0]);
+            break;
+          }
+        }
+        if (selectedCol !== -1) {
+          const colWidth = scrollRef.current.scrollWidth / cols;
+          const targetScroll = selectedCol * colWidth - scrollRef.current.clientWidth / 2;
+          const currentCenter = scrollRef.current.scrollLeft + scrollRef.current.clientWidth / 2;
+          if (Math.abs(currentCenter - (selectedCol * colWidth)) > colWidth) {
+            isAutoScrolling.current = true;
+            scrollRef.current.scrollTo({ left: targetScroll, behavior: 'auto' });
+            setTimeout(() => {
+              isAutoScrolling.current = false;
+            }, 50);
+          }
+        }
+      }
     }
-  }, [grid, cols]);
+  }, [grid, cols, selectedHand]);
 
   return (
     <div
@@ -351,6 +387,9 @@ const BigRoad = ({ logs }: { logs: LogEntry[] }) => {
                           {cell.ties}
                         </span>
                       )}
+                      {appMode === "simu" && selectedHand !== null && cell.hands.includes(selectedHand) && (
+                        <div className="absolute inset-0 m-auto w-2.5 h-2.5 bg-green-500 border border-white rounded-full z-30 shadow-sm"></div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -368,6 +407,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<"chart" | "log" | "strategy">("chart");
   const [showBigRoad, setShowBigRoad] = useState(true);
   const [maPeriod, setMaPeriod] = useState<0 | 6 | 9>(0);
+  const [selectedHand, setSelectedHand] = useState<number | null>(null);
   const chartRef = useRef<any>(null);
 
   // Simu state
@@ -514,9 +554,31 @@ export default function App() {
             : "rgba(77, 204, 189, 0.1)",
         borderWidth: 2,
         tension: 0.1,
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        pointBackgroundColor: appMode === "simu" ? "#0EA5E9" : "#4DCCBD",
+        pointRadius: (context: any) => {
+          if (appMode === "simu" && selectedHand !== null && context.dataIndex === selectedHand - 1) {
+            return 6;
+          }
+          return 0;
+        },
+        pointHoverRadius: 6,
+        pointBackgroundColor: (context: any) => {
+          if (appMode === "simu" && selectedHand !== null && context.dataIndex === selectedHand - 1) {
+            return "#22c55e";
+          }
+          return appMode === "simu" ? "#0EA5E9" : "#4DCCBD";
+        },
+        pointBorderColor: (context: any) => {
+          if (appMode === "simu" && selectedHand !== null && context.dataIndex === selectedHand - 1) {
+            return "#ffffff";
+          }
+          return "transparent";
+        },
+        pointBorderWidth: (context: any) => {
+          if (appMode === "simu" && selectedHand !== null && context.dataIndex === selectedHand - 1) {
+            return 2;
+          }
+          return 0;
+        },
       },
       ...(maPeriod > 0
         ? [
@@ -541,6 +603,15 @@ export default function App() {
     layout: {
       padding: 0,
     },
+    interaction: {
+      mode: "index" as const,
+      intersect: false,
+    },
+    onClick: (event: any, elements: any) => {
+      if (appMode === "simu" && elements && elements.length > 0) {
+        setSelectedHand(elements[0].index + 1);
+      }
+    },
     scales: {
       x: {
         min: 0,
@@ -552,8 +623,8 @@ export default function App() {
         ticks: { color: "#A1A1AA" },
       },
       y: {
-        min: -20,
-        max: 20,
+        min: -35,
+        max: 35,
         title: { display: false },
         grid: {
           display: true,
@@ -571,10 +642,7 @@ export default function App() {
         display: false,
       },
       tooltip: {
-        callbacks: {
-          title: (context: any) => `Hand ${context[0].label}`,
-          label: (context: any) => `Running Sum: ${context.raw}`,
-        },
+        enabled: false,
       },
       zoom: {
         pan: {
@@ -582,7 +650,7 @@ export default function App() {
           mode: "y" as const,
         },
         limits: {
-          y: { min: -40, max: 40 },
+          y: { min: -50, max: 50 },
         },
       },
     },
@@ -800,7 +868,7 @@ export default function App() {
           {/* Big Road Container */}
           {showBigRoad && (
             <div className="h-[20%] min-h-[100px] border-t border-zinc-800">
-               <BigRoad logs={currentLogs} />
+               <BigRoad logs={currentLogs} appMode={appMode} selectedHand={selectedHand} />
             </div>
           )}
         </div>
