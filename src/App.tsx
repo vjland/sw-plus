@@ -623,8 +623,8 @@ export default function App() {
         ticks: { color: "#A1A1AA" },
       },
       y: {
-        min: -35,
-        max: 35,
+        min: -20,
+        max: 20,
         title: { display: false },
         grid: {
           display: true,
@@ -650,7 +650,7 @@ export default function App() {
           mode: "y" as const,
         },
         limits: {
-          y: { min: -50, max: 50 },
+          y: { min: -30, max: 30 },
         },
       },
     },

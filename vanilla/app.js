@@ -98,7 +98,7 @@ const chart = new Chart(ctx, {
         ticks: { color: '#A1A1AA' }
       },
       y: {
-        min: -35, max: 35,
+        min: -20, max: 20,
         title: { display: false },
         grid: { 
           display: true, 
@@ -122,7 +122,7 @@ const chart = new Chart(ctx, {
           mode: 'y',
         },
         limits: {
-          y: { min: -50, max: 50 }
+          y: { min: -30, max: 30 }
         }
       }
     },
