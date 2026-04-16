@@ -426,6 +426,7 @@ export default function App() {
     const { logs: newLogs, chartData: newChartData } = simulate();
     setSimuLogs(newLogs);
     setSimuChartData(newChartData);
+    setSelectedHand(null);
   };
 
   useEffect(() => {
@@ -556,11 +557,11 @@ export default function App() {
         tension: 0.1,
         pointRadius: (context: any) => {
           if (appMode === "simu" && selectedHand !== null && context.dataIndex === selectedHand - 1) {
-            return 6;
+            return 3;
           }
           return 0;
         },
-        pointHoverRadius: 6,
+        pointHoverRadius: 3,
         pointBackgroundColor: (context: any) => {
           if (appMode === "simu" && selectedHand !== null && context.dataIndex === selectedHand - 1) {
             return "#22c55e";

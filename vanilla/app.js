@@ -72,7 +72,7 @@ const chart = new Chart(ctx, {
       borderWidth: 2,
       tension: 0.1,
       pointRadius: 0,
-      pointHoverRadius: 4,
+      pointHoverRadius: 3,
       pointBackgroundColor: '#0EA5E9',
     }, {
       label: 'MA(9)',
@@ -327,7 +327,7 @@ const updateUI = () => {
   chart.data.datasets[0].data = currentChartData;
   chart.data.datasets[0].borderColor = color;
   chart.data.datasets[0].backgroundColor = color;
-  chart.data.datasets[0].pointRadius = currentChartData.map((_, i) => (appMode === 'simu' && selectedHand === i + 1) ? 6 : 0);
+  chart.data.datasets[0].pointRadius = currentChartData.map((_, i) => (appMode === 'simu' && selectedHand === i + 1) ? 3 : 0);
   chart.data.datasets[0].pointBackgroundColor = currentChartData.map((_, i) => (appMode === 'simu' && selectedHand === i + 1) ? '#22c55e' : color);
   chart.data.datasets[0].pointBorderColor = currentChartData.map((_, i) => (appMode === 'simu' && selectedHand === i + 1) ? '#ffffff' : 'transparent');
   chart.data.datasets[0].pointBorderWidth = currentChartData.map((_, i) => (appMode === 'simu' && selectedHand === i + 1) ? 2 : 0);
@@ -557,6 +557,7 @@ btnSimuRefresh.addEventListener('click', () => {
   const { logs, chartData } = simulate();
   simuLogs = logs;
   simuChartData = chartData;
+  selectedHand = null;
   updateUI();
 });
 
