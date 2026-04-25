@@ -15,7 +15,7 @@ let isPanelOpen = false;
 let autoHide = false;
 let liveScoreInput = "";
 let maPeriod = 0;
-let selectedHand = null;
+let selectedRange = null;
 let isAutoScrolling = false;
 
 // DOM Elements
@@ -71,9 +71,59 @@ const chart = new Chart(ctx, {
       backgroundColor: 'rgba(14, 165, 233, 0.1)',
       borderWidth: 2,
       tension: 0.1,
-      pointRadius: 0,
+      pointRadius: (context) => {
+        if (appMode === 'simu' && selectedRange !== null) {
+          const min = Math.min(selectedRange[0], selectedRange[1]);
+          const max = Math.max(selectedRange[0], selectedRange[1]);
+          if (context.dataIndex + 1 >= min && context.dataIndex + 1 <= max) {
+            return 3;
+          }
+        }
+        return 0;
+      },
       pointHoverRadius: 3,
-      pointBackgroundColor: '#0EA5E9',
+      pointBackgroundColor: (context) => {
+        if (appMode === 'simu' && selectedRange !== null) {
+          const min = Math.min(selectedRange[0], selectedRange[1]);
+          const max = Math.max(selectedRange[0], selectedRange[1]);
+          if (context.dataIndex + 1 >= min && context.dataIndex + 1 <= max) {
+            return '#22c55e';
+          }
+        }
+        return appMode === 'simu' ? '#0EA5E9' : '#4DCCBD';
+      },
+      pointBorderColor: (context) => {
+        if (appMode === 'simu' && selectedRange !== null) {
+          const min = Math.min(selectedRange[0], selectedRange[1]);
+          const max = Math.max(selectedRange[0], selectedRange[1]);
+          if (context.dataIndex + 1 >= min && context.dataIndex + 1 <= max) {
+            return '#ffffff';
+          }
+        }
+        return 'transparent';
+      },
+      pointBorderWidth: (context) => {
+        if (appMode === 'simu' && selectedRange !== null) {
+          const min = Math.min(selectedRange[0], selectedRange[1]);
+          const max = Math.max(selectedRange[0], selectedRange[1]);
+          if (context.dataIndex + 1 >= min && context.dataIndex + 1 <= max) {
+            return 2;
+          }
+        }
+        return 0;
+      },
+      segment: {
+        borderColor: (ctx) => {
+          if (appMode === 'simu' && selectedRange !== null && selectedRange[0] !== selectedRange[1]) {
+            const min = Math.min(selectedRange[0], selectedRange[1]);
+            const max = Math.max(selectedRange[0], selectedRange[1]);
+            if (ctx.p0DataIndex + 1 >= min && ctx.p1DataIndex + 1 <= max) {
+              return '#22c55e';
+            }
+          }
+          return appMode === 'simu' ? '#0EA5E9' : '#4DCCBD';
+        }
+      }
     }, {
       label: 'MA(9)',
       data: [],
@@ -132,9 +182,20 @@ const chart = new Chart(ctx, {
     },
     onClick: (event, elements) => {
       if (appMode === 'simu' && elements && elements.length > 0) {
-        const newSelected = elements[0].index + 1;
-        if (selectedHand !== newSelected) {
-          selectedHand = newSelected;
+        const clickedHand = elements[0].index + 1;
+        if (!selectedRange) {
+          selectedRange = [clickedHand, clickedHand];
+          updateUI();
+        } else if (selectedRange[0] === selectedRange[1]) {
+          if (clickedHand === selectedRange[0]) {
+            selectedRange = null;
+            updateUI();
+          } else {
+            selectedRange = [selectedRange[0], clickedHand];
+            updateUI();
+          }
+        } else {
+          selectedRange = [clickedHand, clickedHand];
           updateUI();
         }
       }
@@ -327,10 +388,58 @@ const updateUI = () => {
   chart.data.datasets[0].data = currentChartData;
   chart.data.datasets[0].borderColor = color;
   chart.data.datasets[0].backgroundColor = color;
-  chart.data.datasets[0].pointRadius = currentChartData.map((_, i) => (appMode === 'simu' && selectedHand === i + 1) ? 3 : 0);
-  chart.data.datasets[0].pointBackgroundColor = currentChartData.map((_, i) => (appMode === 'simu' && selectedHand === i + 1) ? '#22c55e' : color);
-  chart.data.datasets[0].pointBorderColor = currentChartData.map((_, i) => (appMode === 'simu' && selectedHand === i + 1) ? '#ffffff' : 'transparent');
-  chart.data.datasets[0].pointBorderWidth = currentChartData.map((_, i) => (appMode === 'simu' && selectedHand === i + 1) ? 2 : 0);
+  
+  // Update Hand Info Display
+  const handInfoDisplay = document.getElementById('hand-info-display');
+  if (appMode === 'simu' && selectedRange !== null) {
+    const minHand = Math.min(selectedRange[0], selectedRange[1]);
+    const maxHand = Math.max(selectedRange[0], selectedRange[1]);
+    
+    // Update hand number text (singular or plural)
+    const handNumContainer = document.querySelector('#hand-info-display > div:nth-child(1) > span.text-zinc-500');
+    if (handNumContainer) {
+      handNumContainer.textContent = minHand === maxHand ? 'Hand' : 'Hands';
+    }
+    
+    const handNum = document.getElementById('info-hand-num');
+    handNum.textContent = `#${minHand}${minHand !== maxHand ? ` - #${maxHand} (${maxHand - minHand})` : ''}`;
+    
+    // Update Hand Sum container
+    const handSumContainer = document.querySelector('#hand-info-display > div:nth-child(3)');
+    if (handSumContainer) {
+      // Clear previous sum contents
+      handSumContainer.innerHTML = '<span class="text-zinc-500 uppercase font-semibold text-[10px] tracking-wider">Sum</span>';
+      
+      const val1 = currentChartData[minHand - 1] ?? 0;
+      const span1 = document.createElement('span');
+      span1.className = `font-mono font-bold text-sm tracking-tighter ${val1 >= 0 ? 'text-blue-400' : 'text-red-400'}`;
+      span1.textContent = (val1 > 0 ? '+' : '') + val1;
+      handSumContainer.appendChild(span1);
+      
+      if (minHand !== maxHand) {
+        const arrow = document.createElement('span');
+        arrow.className = 'text-zinc-500 mx-0.5';
+        arrow.textContent = '→';
+        handSumContainer.appendChild(arrow);
+        
+        const val2 = currentChartData[maxHand - 1] ?? 0;
+        const span2 = document.createElement('span');
+        span2.className = `font-mono font-bold text-sm tracking-tighter ${val2 >= 0 ? 'text-blue-400' : 'text-red-400'}`;
+        span2.textContent = (val2 > 0 ? '+' : '') + val2;
+        handSumContainer.appendChild(span2);
+
+        const delta = val2 - val1;
+        const spanDelta = document.createElement('span');
+        spanDelta.className = `ml-1 font-mono font-bold text-xs ${delta > 0 ? 'text-blue-400' : (delta < 0 ? 'text-red-400' : 'text-zinc-500')}`;
+        spanDelta.textContent = `(${delta > 0 ? '+' : ''}${delta})`;
+        handSumContainer.appendChild(spanDelta);
+      }
+    }
+    
+    handInfoDisplay.classList.remove('hidden');
+  } else {
+    handInfoDisplay.classList.add('hidden');
+  }
   
   if (maPeriod > 0) {
     chart.data.datasets[1].label = `MA(${maPeriod})`;
@@ -557,7 +666,7 @@ btnSimuRefresh.addEventListener('click', () => {
   const { logs, chartData } = simulate();
   simuLogs = logs;
   simuChartData = chartData;
-  selectedHand = null;
+  selectedRange = null;
   updateUI();
 });
 
@@ -752,8 +861,12 @@ function renderBigRoad(logs) {
         if (cell.ties > 1) {
           html += `<span class="text-[9px] text-green-500 font-bold z-20 bg-zinc-950/80 rounded-full px-0.5 leading-none">${cell.ties}</span>`;
         }
-        if (appMode === 'simu' && selectedHand !== null && cell.hands.includes(selectedHand)) {
-          html += '<div class="absolute inset-0 m-auto w-2.5 h-2.5 bg-green-500 border border-white rounded-full z-30 shadow-sm"></div>';
+        if (appMode === 'simu' && selectedRange !== null) {
+          const min = Math.min(selectedRange[0], selectedRange[1]);
+          const max = Math.max(selectedRange[0], selectedRange[1]);
+          if (cell.hands.some(h => h >= min && h <= max)) {
+            html += '<div class="absolute inset-0 m-auto w-[14px] h-[14px] bg-green-500/80 border border-white/50 rounded-sm z-30 shadow-sm mix-blend-screen pointer-events-none"></div>';
+          }
         }
         html += '</div>';
       }
@@ -765,12 +878,13 @@ function renderBigRoad(logs) {
   
   // Auto scroll to right or to selected hand
   const scrollContainer = document.getElementById('big-road-scroll');
-  if (selectedHand === null) {
+  if (selectedRange === null) {
     scrollContainer.scrollLeft = scrollContainer.scrollWidth;
   } else {
+    const targetHand = Math.max(selectedRange[0], selectedRange[1]);
     let selectedCol = -1;
     for (const key in grid) {
-      if (grid[key].hands.includes(selectedHand)) {
+      if (grid[key].hands.includes(targetHand)) {
         selectedCol = parseInt(key.split(',')[0]);
         break;
       }

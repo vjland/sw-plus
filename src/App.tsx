@@ -248,11 +248,11 @@ const calculateMA = (data: number[], period: number) => {
 const BigRoad = ({
   logs,
   appMode,
-  selectedHand,
+  selectedRange,
 }: {
   logs: LogEntry[];
   appMode: string;
-  selectedHand: number | null;
+  selectedRange: [number, number] | null;
 }) => {
   const { grid, maxCol } = useMemo(() => {
     const grid: Record<string, { winner: string; ties: number; hands: number[] }> = {};
@@ -330,12 +330,13 @@ const BigRoad = ({
 
   useEffect(() => {
     if (scrollRef.current) {
-      if (selectedHand === null) {
+      if (selectedRange === null) {
         scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
       } else {
+        const targetHand = Math.max(selectedRange[0], selectedRange[1]);
         let selectedCol = -1;
         for (const key in grid) {
-          if (grid[key].hands.includes(selectedHand)) {
+          if (grid[key].hands.includes(targetHand)) {
             selectedCol = parseInt(key.split(',')[0]);
             break;
           }
@@ -354,7 +355,7 @@ const BigRoad = ({
         }
       }
     }
-  }, [grid, cols, selectedHand]);
+  }, [grid, cols, selectedRange]);
 
   return (
     <div
@@ -387,8 +388,8 @@ const BigRoad = ({
                           {cell.ties}
                         </span>
                       )}
-                      {appMode === "simu" && selectedHand !== null && cell.hands.includes(selectedHand) && (
-                        <div className="absolute inset-0 m-auto w-2.5 h-2.5 bg-green-500 border border-white rounded-full z-30 shadow-sm"></div>
+                      {appMode === "simu" && selectedRange !== null && cell.hands.some(h => h >= Math.min(selectedRange[0], selectedRange[1]) && h <= Math.max(selectedRange[0], selectedRange[1])) && (
+                        <div className="absolute inset-0 m-auto w-3 h-3 bg-green-500/80 border border-white/50 rounded-sm z-30 shadow-sm mix-blend-screen pointer-events-none"></div>
                       )}
                     </div>
                   )}
@@ -407,7 +408,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<"chart" | "log" | "strategy">("chart");
   const [showBigRoad, setShowBigRoad] = useState(true);
   const [maPeriod, setMaPeriod] = useState<0 | 6 | 9>(0);
-  const [selectedHand, setSelectedHand] = useState<number | null>(null);
+  const [selectedRange, setSelectedRange] = useState<[number, number] | null>(null);
   const chartRef = useRef<any>(null);
 
   // Simu state
@@ -426,7 +427,7 @@ export default function App() {
     const { logs: newLogs, chartData: newChartData } = simulate();
     setSimuLogs(newLogs);
     setSimuChartData(newChartData);
-    setSelectedHand(null);
+    setSelectedRange(null);
   };
 
   useEffect(() => {
@@ -556,30 +557,58 @@ export default function App() {
         borderWidth: 2,
         tension: 0.1,
         pointRadius: (context: any) => {
-          if (appMode === "simu" && selectedHand !== null && context.dataIndex === selectedHand - 1) {
-            return 3;
+          if (appMode === "simu" && selectedRange !== null) {
+            const min = Math.min(selectedRange[0], selectedRange[1]);
+            const max = Math.max(selectedRange[0], selectedRange[1]);
+            if (context.dataIndex + 1 >= min && context.dataIndex + 1 <= max) {
+              return 3;
+            }
           }
           return 0;
         },
         pointHoverRadius: 3,
         pointBackgroundColor: (context: any) => {
-          if (appMode === "simu" && selectedHand !== null && context.dataIndex === selectedHand - 1) {
-            return "#22c55e";
+          if (appMode === "simu" && selectedRange !== null) {
+            const min = Math.min(selectedRange[0], selectedRange[1]);
+            const max = Math.max(selectedRange[0], selectedRange[1]);
+            if (context.dataIndex + 1 >= min && context.dataIndex + 1 <= max) {
+              return "#22c55e";
+            }
           }
           return appMode === "simu" ? "#0EA5E9" : "#4DCCBD";
         },
         pointBorderColor: (context: any) => {
-          if (appMode === "simu" && selectedHand !== null && context.dataIndex === selectedHand - 1) {
-            return "#ffffff";
+          if (appMode === "simu" && selectedRange !== null) {
+            const min = Math.min(selectedRange[0], selectedRange[1]);
+            const max = Math.max(selectedRange[0], selectedRange[1]);
+            if (context.dataIndex + 1 >= min && context.dataIndex + 1 <= max) {
+              return "#ffffff";
+            }
           }
           return "transparent";
         },
         pointBorderWidth: (context: any) => {
-          if (appMode === "simu" && selectedHand !== null && context.dataIndex === selectedHand - 1) {
-            return 2;
+          if (appMode === "simu" && selectedRange !== null) {
+            const min = Math.min(selectedRange[0], selectedRange[1]);
+            const max = Math.max(selectedRange[0], selectedRange[1]);
+            if (context.dataIndex + 1 >= min && context.dataIndex + 1 <= max) {
+              return 2;
+            }
           }
           return 0;
         },
+        segment: {
+          borderColor: (ctx: any) => {
+            if (appMode === "simu" && selectedRange !== null && selectedRange[0] !== selectedRange[1]) {
+              const min = Math.min(selectedRange[0], selectedRange[1]);
+              const max = Math.max(selectedRange[0], selectedRange[1]);
+              if (ctx.p0DataIndex + 1 >= min && ctx.p1DataIndex + 1 <= max) {
+                return "#22c55e"; // Highlight segment
+              }
+            }
+            return appMode === "simu" ? "#0EA5E9" : "#4DCCBD";
+          }
+        }
       },
       ...(maPeriod > 0
         ? [
@@ -610,7 +639,18 @@ export default function App() {
     },
     onClick: (event: any, elements: any) => {
       if (appMode === "simu" && elements && elements.length > 0) {
-        setSelectedHand(elements[0].index + 1);
+        const clickedHand = elements[0].index + 1;
+        if (!selectedRange) {
+          setSelectedRange([clickedHand, clickedHand]);
+        } else if (selectedRange[0] === selectedRange[1]) {
+          if (clickedHand === selectedRange[0]) {
+            setSelectedRange(null);
+          } else {
+            setSelectedRange([selectedRange[0], clickedHand]);
+          }
+        } else {
+          setSelectedRange([clickedHand, clickedHand]);
+        }
       }
     },
     scales: {
@@ -864,12 +904,48 @@ export default function App() {
             <div className="absolute inset-0">
               <Line ref={chartRef} data={data} options={options} />
             </div>
+            
+            {appMode === "simu" && selectedRange !== null && (
+              <div className="absolute top-16 left-3 z-20 bg-zinc-900/80 p-2 rounded-lg border border-zinc-800/50 backdrop-blur-sm text-xs flex gap-3 items-center shadow-lg animate-in fade-in slide-in-from-top-1 duration-200">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-zinc-500 uppercase font-semibold text-[10px] tracking-wider">{selectedRange[0] === selectedRange[1] ? 'Hand' : 'Hands'}</span>
+                  <span className="text-white font-mono font-bold text-sm tracking-tighter">
+                    #{Math.min(selectedRange[0], selectedRange[1])}{selectedRange[0] !== selectedRange[1] ? ` - #${Math.max(selectedRange[0], selectedRange[1])} (${Math.max(selectedRange[0], selectedRange[1]) - Math.min(selectedRange[0], selectedRange[1])})` : ''}
+                  </span>
+                </div>
+                <div className="h-3 w-[1px] bg-zinc-700/50" />
+                <div className="flex items-center gap-1.5">
+                  <span className="text-zinc-500 uppercase font-semibold text-[10px] tracking-wider">Sum</span>
+                  <span className={`font-mono font-bold text-sm tracking-tighter ${(currentChartData[Math.min(selectedRange[0], selectedRange[1]) - 1] ?? 0) >= 0 ? 'text-blue-400' : 'text-red-400'}`}>
+                    {(currentChartData[Math.min(selectedRange[0], selectedRange[1]) - 1] ?? 0) > 0 ? '+' : ''}{currentChartData[Math.min(selectedRange[0], selectedRange[1]) - 1] ?? 0}
+                  </span>
+                  {selectedRange[0] !== selectedRange[1] && (() => {
+                    const minIdx = Math.min(selectedRange[0], selectedRange[1]) - 1;
+                    const maxIdx = Math.max(selectedRange[0], selectedRange[1]) - 1;
+                    const val1 = currentChartData[minIdx] ?? 0;
+                    const val2 = currentChartData[maxIdx] ?? 0;
+                    const delta = val2 - val1;
+                    return (
+                      <>
+                        <span className="text-zinc-500 mx-0.5">→</span>
+                        <span className={`font-mono font-bold text-sm tracking-tighter ${val2 >= 0 ? 'text-blue-400' : 'text-red-400'}`}>
+                          {val2 > 0 ? '+' : ''}{val2}
+                        </span>
+                        <span className={`ml-1 font-mono font-bold text-xs ${delta > 0 ? 'text-blue-400' : (delta < 0 ? 'text-red-400' : 'text-zinc-500')}`}>
+                          ({delta > 0 ? '+' : ''}{delta})
+                        </span>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
           </div>
           
           {/* Big Road Container */}
           {showBigRoad && (
             <div className="h-[20%] min-h-[100px] border-t border-zinc-800">
-               <BigRoad logs={currentLogs} appMode={appMode} selectedHand={selectedHand} />
+               <BigRoad logs={currentLogs} appMode={appMode} selectedRange={selectedRange} />
             </div>
           )}
         </div>
